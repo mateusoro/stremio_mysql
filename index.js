@@ -1,9 +1,7 @@
 const { addonBuilder, serveHTTP } = require('stremio-addon-sdk');
 var magnet = require("magnet-uri");
-const MongoClient = require('mongodb').MongoClient;
-const uri = "mongodb+srv://root:root@cluster0-0rj95.mongodb.net/test?retryWrites=true";
-const client = new MongoClient(uri, { useNewUrlParser: true });
-var shell = require('shelljs');
+var mysql = require('mysql');
+const util = require('util');
 
 /*
 git add .
@@ -11,6 +9,31 @@ git commit -am "make it better"
 git push heroku master
 
 */
+
+const config = {
+	host: 'sql434.main-hosting.eu',
+	user: 'u888071488_root',
+	password: 'Ss161514',
+	database: 'u888071488_stremio_db',
+	connectionLimit: 5,
+	connectTimeout: 30000, // 10 seconds
+	acquireTimeout: 30000, // 10 seconds
+	waitForConnections: true, // Default: true
+	queueLimit: 0
+};
+
+const pool = mysql.createPool(config);
+pool.query = util.promisify(pool.query)
+
+async function select(sql) {
+
+	const query = pool.query(sql);
+	const result = await query;
+	//l(result);
+	return result;
+
+}
+
 
 const builder = new addonBuilder({
 	id: 'stremiodubladoH',
@@ -50,13 +73,7 @@ builder.defineStreamHandler(async function(args) {
 			console.log(e);
 		}
 	});
-	//console.log(dataset_temp.length);
-	dataset_temp.push(
-			{ title: "Pesquisar", externalUrl: "https://stremiobusca.mateusoro.repl.co/?imdb="+ key.split(' ')[0]});
-	dataset_temp.push(
-			{ title: "+ Preferidos", externalUrl: "https://funcoes.mateusoro.repl.co/?preferido="+ key.split(' ')[0]});
-	dataset_temp.push(
-			{ title: "- Preferidos", externalUrl: "https://funcoes.mateusoro.repl.co/?remover_preferido="+ key.split(' ')[0]});
+	
 	
 	return Promise.resolve({ streams: dataset_temp });
 });
@@ -96,15 +113,17 @@ builder.defineCatalogHandler(async function(args, cb) {
 	return Promise.resolve({ metas: dataset_temp });
 
 })
-client.connect(err => {
-	console.log('conectou');
-});
+
 async function getRegistros(key) {
-	console.log(key)
-	return client.db("registros").collection("registros").find({ imdb: key }).toArray();
+	//console.log(key)
+	//return client.db("registros").collection("registros").find({ imdb: key }).toArray();
+	return await select("SELECT * FROM registros where imdb='"+key+"'");
+	
 }
 async function getCatalogo() {
-	return client.db("registros").collection("preferidos").find({}).toArray();
+	//return client.db("registros").collection("preferidos").find({}).toArray();
+    //return await select("SELECT * FROM preferidos");
+    return [];
 }
 function fromMagnetMap(uri, m, nome) {
 	//console.log(uri);
@@ -144,18 +163,6 @@ function fromMagnetMap(uri, m, nome) {
 		title: tags,
 		fileIdx: m
 	}
-}
-
-function fechar() {
-	var pid = shell.exec('pidof -c node').stdout;
-	var sp = pid.split(" ");
-	for (var s in sp) {
-		if (s > 3) {
-			console.log('kill -9 ' + sp[s]);
-			shell.exec('kill -9 ' + sp[s]);
-		}
-	};
-
 }
 
 var addonInterface = builder.getInterface();
