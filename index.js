@@ -1,39 +1,15 @@
 const { addonBuilder, serveHTTP } = require('stremio-addon-sdk');
 var magnet = require("magnet-uri");
-var mysql = require('mysql');
-const util = require('util');
+const MongoClient = require('mongodb').MongoClient;
+const uri = "mongodb+srv://root:root@cluster0-0rj95.mongodb.net/test?retryWrites=true";
+const client = new MongoClient(uri, { useNewUrlParser: true });
+var shell = require('shelljs');
 
 /*
 git add .
 git commit -am "make it better"
 git push heroku master
-
 */
-
-const config = {
-	host: 'sql434.main-hosting.eu',
-	user: 'u888071488_root',
-	password: 'Ss161514',
-	database: 'u888071488_stremio_db',
-	connectionLimit: 5,
-	connectTimeout: 30000, // 10 seconds
-	acquireTimeout: 30000, // 10 seconds
-	waitForConnections: true, // Default: true
-	queueLimit: 0
-};
-
-const pool = mysql.createPool(config);
-pool.query = util.promisify(pool.query)
-
-async function select(sql) {
-
-	const query = pool.query(sql);
-	const result = await query;
-	//l(result);
-	return result;
-
-}
-
 
 const builder = new addonBuilder({
 	id: 'stremiodubladoH',
@@ -73,7 +49,7 @@ builder.defineStreamHandler(async function(args) {
 			console.log(e);
 		}
 	});
-	
+	//console.log(dataset_temp.length);
 	
 	return Promise.resolve({ streams: dataset_temp });
 });
@@ -104,7 +80,7 @@ builder.defineCatalogHandler(async function(args, cb) {
 			} else {
 				dataset_temp = [converte];
 			}			
-			
+
 		} catch (e) {
 			console.log(e);
 		}
@@ -113,17 +89,15 @@ builder.defineCatalogHandler(async function(args, cb) {
 	return Promise.resolve({ metas: dataset_temp });
 
 })
-
+client.connect(err => {
+	console.log('conectou');
+});
 async function getRegistros(key) {
-	//console.log(key)
-	//return client.db("registros").collection("registros").find({ imdb: key }).toArray();
-	return await select("SELECT * FROM registros where imdb='"+key+"'");
-	
+	console.log(key)
+	return client.db("registros").collection("registros").find({ imdb: key }).toArray();
 }
 async function getCatalogo() {
-	//return client.db("registros").collection("preferidos").find({}).toArray();
-    //return await select("SELECT * FROM preferidos");
-    return [];
+	return client.db("registros").collection("preferidos").find({}).toArray();
 }
 function fromMagnetMap(uri, m, nome) {
 	//console.log(uri);
@@ -165,6 +139,17 @@ function fromMagnetMap(uri, m, nome) {
 	}
 }
 
+function fechar() {
+	var pid = shell.exec('pidof -c node').stdout;
+	var sp = pid.split(" ");
+	for (var s in sp) {
+		if (s > 3) {
+			console.log('kill -9 ' + sp[s]);
+			shell.exec('kill -9 ' + sp[s]);
+		}
+	};
+
+}
+
 var addonInterface = builder.getInterface();
 serveHTTP(addonInterface, { port: process.env.PORT || 8080 });
-
