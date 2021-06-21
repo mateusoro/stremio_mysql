@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "A barebones Node.js app using [Express 4](http://expressjs.com/).",  
   "dependencies": {
-    "magnet-uri": "^6.1.0",
-    "mysql": "^2.18.1",
-    "stremio-addon-sdk": "^1.6.5",
-    "util": "^0.12.3"
+  "magnet-uri": "^5.2.4",
+    "mongodb": "^3.3.3",
+    "shelljs": "^0.8.3",
+    "stremio-addon-sdk": "^1.4.0"
   },
   "devDependencies": {},
   "scripts": {
