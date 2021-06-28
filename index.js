@@ -1,7 +1,7 @@
 const { addonBuilder, serveHTTP } = require('stremio-addon-sdk');
 var magnet = require("magnet-uri");
 var shell = require('shelljs');
-const mysql = require('mysql');
+const mysql = require('mysql2/promise');
 
 var config =
 {
@@ -9,26 +9,13 @@ var config =
     user: 'u888071488_root',
     password: 'Ss161514',
     database: 'u888071488_stremio_db',
-    port: 3306
+    port: 3306,
+	waitForConnections: true,
+	connectionLimit: 3,
+	queueLimit: 0
 };
 
-const conn = new mysql.createConnection(config);
-
-conn.connect(
-    function (err) { 
-    if (err) { 
-        console.log("!!! Cannot connect !!! Error:");
-        throw err;
-    }
-    else  {
-       console.log("Connection established.");     
-	   conn.query('SELECT * FROM preferidos', 
-        function (err, results, fields) {
-            if (err) throw err;            
-            console.log(results);
-        });	   
-    }
-});
+const pool = mysql.createPool(config);
 
 /*
 git add .
@@ -37,9 +24,9 @@ git push heroku master
 */
 
 const builder = new addonBuilder({
-	id: 'stremiodubladoH',
-	version: '1.0.8',
-	name: 'DBH',
+	id: 'stremiodubladoM',
+	version: '1.0.9',
+	name: 'DBHM',
 	catalogs: [		
 		{
 			type: 'series',
@@ -58,6 +45,7 @@ builder.defineStreamHandler(async function(args) {
 	var reg = await getRegistros(key);
 	reg.forEach((row) => {
 		try {
+			//console.log(row);
 			var converte = fromMagnetMap(row.magnet, row.mapa, row.nome);
 			//console.log(converte);
 			if (dataset_temp != null) {
@@ -117,11 +105,8 @@ builder.defineCatalogHandler(async function(args, cb) {
 
 async function getRegistros(key) {
 	console.log(key)
-	conn.query('SELECT * FROM registros where imdb="'+key+'"', 
-        function (err, results, fields) {
-            if (err) throw err;            
-            return results;
-        });	
+	var [rows, fields] = await pool.query('SELECT * FROM registros where imdb="'+key+'"');
+	return rows;
 }
 async function getCatalogo() {
 	//return client.db("registros").collection("preferidos").find({}).toArray();
