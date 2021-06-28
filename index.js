@@ -1,9 +1,34 @@
 const { addonBuilder, serveHTTP } = require('stremio-addon-sdk');
 var magnet = require("magnet-uri");
-const MongoClient = require('mongodb').MongoClient;
-const uri = "mongodb+srv://root:root@cluster0-0rj95.mongodb.net/test?retryWrites=true";
-const client = new MongoClient(uri, { useNewUrlParser: true });
 var shell = require('shelljs');
+const mysql = require('mysql');
+
+var config =
+{
+    host: 'sql434.main-hosting.eu',
+    user: 'u888071488_root',
+    password: 'Ss161514',
+    database: 'u888071488_stremio_db',
+    port: 3306
+};
+
+const conn = new mysql.createConnection(config);
+
+conn.connect(
+    function (err) { 
+    if (err) { 
+        console.log("!!! Cannot connect !!! Error:");
+        throw err;
+    }
+    else  {
+       console.log("Connection established.");     
+	   conn.query('SELECT * FROM preferidos', 
+        function (err, results, fields) {
+            if (err) throw err;            
+            console.log(results);
+        });	   
+    }
+});
 
 /*
 git add .
@@ -89,15 +114,18 @@ builder.defineCatalogHandler(async function(args, cb) {
 	return Promise.resolve({ metas: dataset_temp });
 
 })
-client.connect(err => {
-	console.log('conectou');
-});
+
 async function getRegistros(key) {
 	console.log(key)
-	return client.db("registros").collection("registros").find({ imdb: key }).toArray();
+	conn.query('SELECT * FROM registros where imdb="'+key+'"', 
+        function (err, results, fields) {
+            if (err) throw err;            
+            return results;
+        });	
 }
 async function getCatalogo() {
-	return client.db("registros").collection("preferidos").find({}).toArray();
+	//return client.db("registros").collection("preferidos").find({}).toArray();
+	return [];
 }
 function fromMagnetMap(uri, m, nome) {
 	//console.log(uri);
@@ -153,3 +181,4 @@ function fechar() {
 
 var addonInterface = builder.getInterface();
 serveHTTP(addonInterface, { port: process.env.PORT || 8080 });
+//serveHTTP(addonInterface, { port: 5000});
